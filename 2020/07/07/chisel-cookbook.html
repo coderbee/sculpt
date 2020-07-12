@@ -107,7 +107,7 @@ window.onload = wrap_img;
        • <span class="read-time" title="Estimated read time">
     
     
-      8 min read
+      1 min read
     
 </span></p>
 
@@ -168,404 +168,58 @@ window.onload = wrap_img;
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Motivation">Motivation<a class="anchor-link" href="#Motivation"> </a></h2><p>Now that you are familiar with Scala, let's start carving out some hardware! Chisel stands for <strong>C</strong>onstructing <strong>H</strong>ardware <strong>I</strong>n a <strong>S</strong>cala <strong>E</strong>mbedded <strong>L</strong>anguage. That means it is a DSL in Scala, allowing you to take advantage of both Scala and Chisel programming within the same code. It is important to understand which code is "Scala" and which code is "Chisel", but we will discuss that more later. For now, think of Chisel and the code in Module 2 as a better way to write Verilog. This module throws an entire Chisel <code>Module</code> and tester at you. Just get the gist of it for now. You'll see plenty more examples later.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Setup">Setup<a class="anchor-link" href="#Setup"> </a></h2><p>The following cell downloads the dependencies needed for Chisel. You will see it in all future notebooks. <strong>Run this cell now</strong>.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">val</span> <span class="n">path</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="n">getProperty</span><span class="p">(</span><span class="s2">&quot;user.dir&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/source/load-ivy.sc&quot;</span>
-<span class="n">interp</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="n">ammonite</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">java</span><span class="o">.</span><span class="n">nio</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">FileSystems</span><span class="o">.</span><span class="n">getDefault</span><span class="p">()</span><span class="o">.</span><span class="n">getPath</span><span class="p">(</span><span class="n">path</span><span class="p">)))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>As mentioned in the last module, these statements are needed to import Chisel. <strong>Run this cell now</strong> before running any future code blocks.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">chisel3._</span>
-<span class="kn">import</span> <span class="nn">chisel3.util._</span>
-<span class="kn">import</span> <span class="nn">chisel3.iotesters.</span><span class="p">{</span><span class="n">ChiselFlatSpec</span><span class="p">,</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">PeekPokeTester</span><span class="p">}</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr />
-<h1 id="Your-First-Module">Your First Module<a class="anchor-link" href="#Your-First-Module"> </a></h1><p>This section will present your first hardware module, a test case, and how to run it. It will contain many things that you will not understand, and that is OK. We want you to take away the broad strokes, so you can continually return to this complete and working example to reinforce what you've learned.</p>
-<p><span style="color:blue">**Example: A Module**</span><br />
-Like Verilog, we can declare module definitions in Chisel. The following example is a Chisel <code>Module</code>, <code>Passthrough</code>, that has one 4-bit input, <code>in</code>, and one 4-bit output, <code>out</code>. The module combinationally connects <code>in</code> and <code>out</code>, so <code>in</code> drives <code>out</code>.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Chisel</span> <span class="n">Code</span><span class="p">:</span> <span class="n">Declare</span> <span class="n">a</span> <span class="n">new</span> <span class="n">module</span> <span class="n">definition</span>
-<span class="k">class</span> <span class="nc">Passthrough</span> <span class="n">extends</span> <span class="n">Module</span> <span class="p">{</span>
-  <span class="n">val</span> <span class="n">io</span> <span class="o">=</span> <span class="n">IO</span><span class="p">(</span><span class="n">new</span> <span class="n">Bundle</span> <span class="p">{</span>
-    <span class="n">val</span> <span class="ow">in</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="mf">4.</span><span class="n">W</span><span class="p">))</span>
-    <span class="n">val</span> <span class="n">out</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="mf">4.</span><span class="n">W</span><span class="p">))</span>
-  <span class="p">})</span>
-  <span class="n">io</span><span class="o">.</span><span class="n">out</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="ow">in</span>
-<span class="p">}</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>There's a lot here! The following explains how to think of each line in terms of the hardware we are describing.</p>
-<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Passthrough</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-</pre></div>
-<p>We declare a new module called <code>Passthrough</code>. <code>Module</code> is a built-in Chisel class that all hardware modules must extend.</p>
-<div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(...)</span>
-</pre></div>
-<p>We declare all our input and output ports in a special <code>io</code> <code>val</code>. It must be called <code>io</code> and be an <code>IO</code> object or instance, which requires something of the form <code>IO(_instantiated_bundle_)</code>.</p>
-<div class="highlight"><pre><span></span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="n">in</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(...)</span>
-    <span class="k">val</span> <span class="n">out</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(...)</span>
-<span class="o">}</span>
-</pre></div>
-<p>We declare a new hardware struct type (Bundle) that contains some named signals <code>in</code> and <code>out</code> with directions Input and Output, respectively.</p>
-<div class="highlight"><pre><span></span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span>
-</pre></div>
-<p>We declare a signal's hardware type. In this case, it is an unsigned integer of width 4.</p>
-<div class="highlight"><pre><span></span><span class="n">io</span><span class="o">.</span><span class="n">out</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="n">in</span>
-</pre></div>
-<p>We connect our input port to our output port, such that <code>io.in</code> <em>drives</em> <code>io.out</code>. Note that the <code>:=</code> operator is a <strong><em>Chisel</em></strong> operator that indicates that the right-hand signal drives the left-hand signal. It is a directioned operator.</p>
-<p>The neat thing about hardware construction languages (HCLs) is that we can use the underlying programming language as a scripting language. For example, after declaring our Chisel module, we then use Scala to call the Chisel compiler to translate Chisel <code>Passthrough</code> into Verilog <code>Passthrough</code>. This process is called <strong><em>elaboration</em></strong>.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Scala</span> <span class="n">Code</span><span class="p">:</span> <span class="n">Elaborate</span> <span class="n">our</span> <span class="n">Chisel</span> <span class="n">design</span> <span class="n">by</span> <span class="n">translating</span> <span class="n">it</span> <span class="n">to</span> <span class="n">Verilog</span>
-<span class="o">//</span> <span class="n">Don</span><span class="s1">&#39;t worry about understanding this code; it is very complicated Scala</span>
-<span class="n">println</span><span class="p">(</span><span class="n">getVerilog</span><span class="p">(</span><span class="n">new</span> <span class="n">Passthrough</span><span class="p">))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Note that the Name of our module is <code>cmd&lt;#&gt;WrapperHelperPassthrough</code>, which is an artifact of running this tutorial in Jupyter. In your normal code, its name should just be <code>Passthrough</code>. This is an important lesson though - although Chisel does its best to preserve the names of your modules and other hardware components, sometimes it fails to do so.</p>
-<p><span style="color:blue">**Example: A Module Generator**</span><br />
-If we apply what we learned about Scala to this example, we can see that a Chisel module is implemented as a Scala class. Just like any other Scala class, we could make a Chisel module take some construction parameters. In this case, we make a new class <code>PassthroughGenerator</code> which will accept an integer <code>width</code> that dictates the widths of its input and output ports:</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Chisel</span> <span class="n">Code</span><span class="p">,</span> <span class="n">but</span> <span class="k">pass</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">parameter</span> <span class="n">to</span> <span class="nb">set</span> <span class="n">widths</span> <span class="n">of</span> <span class="n">ports</span>
-<span class="k">class</span> <span class="nc">PassthroughGenerator</span><span class="p">(</span><span class="n">width</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="n">extends</span> <span class="n">Module</span> <span class="p">{</span> 
-  <span class="n">val</span> <span class="n">io</span> <span class="o">=</span> <span class="n">IO</span><span class="p">(</span><span class="n">new</span> <span class="n">Bundle</span> <span class="p">{</span>
-    <span class="n">val</span> <span class="ow">in</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="n">width</span><span class="o">.</span><span class="n">W</span><span class="p">))</span>
-    <span class="n">val</span> <span class="n">out</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="n">width</span><span class="o">.</span><span class="n">W</span><span class="p">))</span>
-  <span class="p">})</span>
-  <span class="n">io</span><span class="o">.</span><span class="n">out</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="ow">in</span>
-<span class="p">}</span>
-
-<span class="o">//</span> <span class="n">Let</span><span class="s1">&#39;s now generate modules with different widths</span>
-<span class="n">println</span><span class="p">(</span><span class="n">getVerilog</span><span class="p">(</span><span class="n">new</span> <span class="n">PassthroughGenerator</span><span class="p">(</span><span class="mi">10</span><span class="p">)))</span>
-<span class="n">println</span><span class="p">(</span><span class="n">getVerilog</span><span class="p">(</span><span class="n">new</span> <span class="n">PassthroughGenerator</span><span class="p">(</span><span class="mi">20</span><span class="p">)))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Notice that the generated Verilog uses different bitwidths for the input/output depending on the value assigned to the <code>width</code> parameter. Let's dig into how this works. Because Chisel Modules are normal Scala classes, we can use the power of Scala's class constructors to parameterize the elaboration of our design.</p>
-<p>You may notice that this parameterization is enabled by <em>Scala</em>, not <em>Chisel</em>; Chisel has no extra APIs for parameterization, but a designer can simply leverage Scala features to parameterize his/her designs.</p>
-<p>Because <code>PassthroughGenerator</code> no longer describes a single Module, but instead describes a family of modules parameterized by <code>width</code>, we refer to this <code>Passthrough</code> as a <strong><em>generator</em></strong>.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr />
-<h1 id="Testing-Your-Hardware">Testing Your Hardware<a class="anchor-link" href="#Testing-Your-Hardware"> </a></h1><p>No hardware module or generator should be complete without a tester. Chisel has built-in test features that you will explore throughout this bootcamp. The following example is a Chisel test harness that passes values to an instance of <code>Passthrough</code>'s input port <code>in</code>, and checks that the same value is seen on the output port <code>out</code>.</p>
-<p><span style="color:blue">**Example: A Tester**</span><br />
-There is some advanced Scala going on here. However, there is no need for you to understand anything except the <code>poke</code> and <code>expect</code> commands. You can think of the rest of the code as simply boilerplate to write these simple tests.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Scala</span> <span class="n">Code</span><span class="p">:</span> <span class="n">Calling</span> <span class="n">Driver</span> <span class="n">to</span> <span class="n">instantiate</span> <span class="n">Passthrough</span> <span class="o">+</span> <span class="n">PeekPokeTester</span> <span class="ow">and</span> <span class="n">execute</span> <span class="n">the</span> <span class="n">test</span><span class="o">.</span>
-<span class="o">//</span> <span class="n">Don</span><span class="s1">&#39;t worry about understanding this code; it is very complicated Scala.</span>
-<span class="o">//</span> <span class="n">Think</span> <span class="n">of</span> <span class="n">it</span> <span class="n">more</span> <span class="k">as</span> <span class="n">boilerplate</span> <span class="n">to</span> <span class="n">run</span> <span class="n">a</span> <span class="n">Chisel</span> <span class="n">test</span><span class="o">.</span>
-<span class="n">val</span> <span class="n">testResult</span> <span class="o">=</span> <span class="n">Driver</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="n">new</span> <span class="n">Passthrough</span><span class="p">())</span> <span class="p">{</span>
-  <span class="n">c</span> <span class="o">=&gt;</span> <span class="n">new</span> <span class="n">PeekPokeTester</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">poke</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="ow">in</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>     <span class="o">//</span> <span class="n">Set</span> <span class="n">our</span> <span class="nb">input</span> <span class="n">to</span> <span class="n">value</span> <span class="mi">0</span>
-    <span class="n">expect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="o">//</span> <span class="n">Assert</span> <span class="n">that</span> <span class="n">the</span> <span class="n">output</span> <span class="n">correctly</span> <span class="n">has</span> <span class="mi">0</span>
-    <span class="n">poke</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="ow">in</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>     <span class="o">//</span> <span class="n">Set</span> <span class="n">our</span> <span class="nb">input</span> <span class="n">to</span> <span class="n">value</span> <span class="mi">1</span>
-    <span class="n">expect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="o">//</span> <span class="n">Assert</span> <span class="n">that</span> <span class="n">the</span> <span class="n">output</span> <span class="n">correctly</span> <span class="n">has</span> <span class="mi">1</span>
-    <span class="n">poke</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="ow">in</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>     <span class="o">//</span> <span class="n">Set</span> <span class="n">our</span> <span class="nb">input</span> <span class="n">to</span> <span class="n">value</span> <span class="mi">2</span>
-    <span class="n">expect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="o">//</span> <span class="n">Assert</span> <span class="n">that</span> <span class="n">the</span> <span class="n">output</span> <span class="n">correctly</span> <span class="n">has</span> <span class="mi">2</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-<span class="k">assert</span><span class="p">(</span><span class="n">testResult</span><span class="p">)</span>   <span class="o">//</span> <span class="n">Scala</span> <span class="n">Code</span><span class="p">:</span> <span class="k">if</span> <span class="n">testResult</span> <span class="o">==</span> <span class="n">false</span><span class="p">,</span> <span class="n">will</span> <span class="n">throw</span> <span class="n">an</span> <span class="n">error</span>
-<span class="n">println</span><span class="p">(</span><span class="s2">&quot;SUCCESS!!&quot;</span><span class="p">)</span> <span class="o">//</span> <span class="n">Scala</span> <span class="n">Code</span><span class="p">:</span> <span class="k">if</span> <span class="n">we</span> <span class="n">get</span> <span class="n">here</span><span class="p">,</span> <span class="n">our</span> <span class="n">tests</span> <span class="n">passed</span><span class="err">!</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>What's going on? The test accepts a <code>Passthrough</code> module, assigns values to the module's inputs, and checks its outputs. To set an input, we call <code>poke</code>. To check an output, we call <code>expect</code>. If we don't want to compare the output to an expected value (no assertion), we can <code>peek</code> the output instead.</p>
-<p>If all <code>expect</code> statements are true, then our boilerplate code will return true (see <code>testResult</code>).</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><span style="color:red">**Exercise: Writing Your Own Testers**</span><br />
-Write and execute two tests, one that tests <code>PassthroughGenerator</code> for a width of 10 and a second that tests <code>PassthroughGenerator</code> for a width of 20. Check at least two values for each: zero and the maximum value supported by the specified width. Note that the triple question mark has a special meaning in Scala. You may see it frequently in these bootcamp exercises. Running code with the <code>???</code> will produce the <code>NotImplementedError</code>. Replace <code>???</code> with your testers.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">val</span> <span class="n">test10result</span> <span class="o">=</span> <span class="err">?</span><span class="o">??</span>
-
-<span class="n">val</span> <span class="n">test20result</span> <span class="o">=</span> <span class="err">?</span><span class="o">??</span>
-
-<span class="k">assert</span><span class="p">((</span><span class="n">test10result</span> <span class="o">==</span> <span class="n">true</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">test20result</span> <span class="o">==</span> <span class="n">true</span><span class="p">))</span>
-<span class="n">println</span><span class="p">(</span><span class="s2">&quot;SUCCESS!!&quot;</span><span class="p">)</span> <span class="o">//</span> <span class="n">Scala</span> <span class="n">Code</span><span class="p">:</span> <span class="k">if</span> <span class="n">we</span> <span class="n">get</span> <span class="n">here</span><span class="p">,</span> <span class="n">our</span> <span class="n">tests</span> <span class="n">passed</span><span class="err">!</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<div id="container"><section id="accordion"><div>
-<input type="checkbox" id="check-1" />
-<label for="check-1"><strong>Solution</strong> (click to toggle displaying it)</label>
-<article>
-<pre style="background-color:#f7f7f7">
-val test10result = Driver(() =&gt; new PassthroughGenerator(10)) {
-  c =&gt; new PeekPokeTester(c) {
-    poke(c.io.in, 0)
-    expect(c.io.out, 0)
-    poke(c.io.in, 1023)
-    expect(c.io.out, 1023)
-  }
-}
-
-val test20result = Driver(() =&gt; new PassthroughGenerator(20)) {
-  c =&gt; new PeekPokeTester(c) {
-    poke(c.io.in, 0)
-    expect(c.io.out, 0)
-    poke(c.io.in, 1048575)
-    expect(c.io.out, 1048575)
-  }
-}
-
-</pre></article></div></section></div>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr />
-<h1 id="Looking-at-Generated-Verilog/FIRRTL">Looking at Generated Verilog/FIRRTL<a class="anchor-link" href="#Looking-at-Generated-Verilog/FIRRTL"> </a></h1><p>If you are having trouble understanding the generated hardware and are comfortable with reading structural Verilog and/or FIRRTL (Chisel's IR which is comparable to a synthesis-only subset of Verilog), then you can try looking at the generated Verilog to see the result of Chisel execution.</p>
-<p>Here is an example of generating the Verilog (which you've seen already) and the FIRRTL.</p>
-
-</div>
-</div>
-</div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Viewing</span> <span class="n">the</span> <span class="n">Verilog</span> <span class="k">for</span> <span class="n">debugging</span>
-<span class="n">println</span><span class="p">(</span><span class="n">getVerilog</span><span class="p">(</span><span class="n">new</span> <span class="n">Passthrough</span><span class="p">))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">Viewing</span> <span class="n">the</span> <span class="n">firrtl</span> <span class="k">for</span> <span class="n">debugging</span>
-<span class="n">println</span><span class="p">(</span><span class="n">getFirrtl</span><span class="p">(</span><span class="n">new</span> <span class="n">Passthrough</span><span class="p">))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr />
-<h1 id="You're-done!">You're done!<a class="anchor-link" href="#You're-done!"> </a></h1><p><a href="#top">Return to the top.</a></p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="-Appendix:-A-Note-on-&quot;printf&quot;-Debugging"><span style="color:red"> Appendix: A Note on "printf" Debugging</span><a class="anchor-link" href="#-Appendix:-A-Note-on-&quot;printf&quot;-Debugging"> </a></h2><p><a href="https://stackoverflow.com/a/189570">Debugging with print statements</a> is not always the best way to debug, but is often an easy first step to see what's going on when something doesn't work the way you expect.
-Because Chisel generators are programs generating hardware, there are some extra subtleties about printing generator and circuit state.
-It is important to remember when your print statement executes and what is being printed.
-The three common scenarios where you might want to print have some important differences:</p>
 <ul>
-<li>Chisel generator prints during circuit generation</li>
-<li>Circuit prints during circuit simulation</li>
-<li>Tester prints during testing</li>
+<li><em>Module</em> is a built-in Chisel class that all hardware modules must extend.</li>
+<li>THe io'e are defined using a special <strong>val io</strong>. must of of the IO object/instance</li>
+<li><strong>Bundle</strong> - Hardware struct type</li>
+<li>:= operator is a Chisel operator that indicates that the right-hand signal drives the left-hand signal. It is a directioned operator.</li>
+<li>Elaboration : we then use Scala to call the Chisel compiler to translate Chisel Passthrough into Verilog Passthrough.  <strong>getVerilog</strong>(new Passthrough))</li>
+<li><strong>Parameterization</strong> Chisel module is implemented as a Scala class. Just like any other Scala class, we could make a Chisel module take some construction parameters. Powerful parameterization. parameterization is enabled by Scala, not Chisel; Chisel has no extra APIs for parameterization, but a designer can simply leverage Scala features to parameterize his/her designs.</li>
+<li>Chisel test harness <ul>
+<li>poke</li>
+<li>expect
+<code>
+val testResult = Driver(() =&gt; new Passthrough()) {
+c =&gt; new PeekPokeTester(c) {
+  poke(c.io.in, 0)     // Set our input to value 0
+  expect(c.io.out, 0)  // Assert that the output correctly has 0
+&lt;\code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<ul>
+<li>Chisel printf has its own string interpolator too
+  printf(p"Print during simulation: IO is $io\n")</li>
+<li>printf vs println in scala </li>
 </ul>
-<p><code>println</code> is a built-in Scala function that prints to the console. It <strong>cannot</strong> be used to print during circuit simulation because the generated circuit is FIRRTL or Verilog- not Scala.</p>
-<p>The following code block shows different styles of printing.</p>
 
 </div>
 </div>
 </div>
-    
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">PrintingModule</span> <span class="n">extends</span> <span class="n">Module</span> <span class="p">{</span>
-    <span class="n">val</span> <span class="n">io</span> <span class="o">=</span> <span class="n">IO</span><span class="p">(</span><span class="n">new</span> <span class="n">Bundle</span> <span class="p">{</span>
-        <span class="n">val</span> <span class="ow">in</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="mf">4.</span><span class="n">W</span><span class="p">))</span>
-        <span class="n">val</span> <span class="n">out</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">UInt</span><span class="p">(</span><span class="mf">4.</span><span class="n">W</span><span class="p">))</span>
-    <span class="p">})</span>
-    <span class="n">io</span><span class="o">.</span><span class="n">out</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="ow">in</span>
-
-    <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;Print during simulation: Input is </span><span class="si">%d</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="ow">in</span><span class="p">)</span>
-    <span class="o">//</span> <span class="n">chisel</span> <span class="n">printf</span> <span class="n">has</span> <span class="n">its</span> <span class="n">own</span> <span class="n">string</span> <span class="n">interpolator</span> <span class="n">too</span>
-    <span class="n">printf</span><span class="p">(</span><span class="n">p</span><span class="s2">&quot;Print during simulation: IO is $io</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">println</span><span class="p">(</span><span class="n">s</span><span class="s2">&quot;Print during generation: Input is $</span><span class="si">{io.in}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="k">class</span> <span class="nc">PrintingModuleTester</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">PrintingModule</span><span class="p">)</span> <span class="n">extends</span> <span class="n">PeekPokeTester</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">poke</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="ow">in</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-    <span class="n">step</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">//</span> <span class="n">circuit</span> <span class="n">will</span> <span class="nb">print</span>
-    
-    <span class="n">println</span><span class="p">(</span><span class="n">s</span><span class="s2">&quot;Print during testing: Input is ${peek(c.io.in)}&quot;</span><span class="p">)</span>
-<span class="p">}</span>
-<span class="n">chisel3</span><span class="o">.</span><span class="n">iotesters</span><span class="o">.</span><span class="n">Driver</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new</span> <span class="n">PrintingModule</span> <span class="p">)</span> <span class="p">{</span> <span class="n">c</span> <span class="o">=&gt;</span> <span class="n">new</span> <span class="n">PrintingModuleTester</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="p">}</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Combinatorial-circuits">Combinatorial circuits<a class="anchor-link" href="#Combinatorial-circuits"> </a></h3><ul>
+<li>Basic chisel types - <strong>SInt, UInt, and bool</strong></li>
+<li>During hardware construction, use <strong>val</strong> only not var since the construct itself never changes, only the value it holds druing simulation changes</li>
+<li>We've called our class MyModule, and it extends Module. This means it gets mapped to a hardware module in Verilog.</li>
+<li>[QUESTION] Is there something like a synthesizable subset?? what does it mean that everything within a class tht extends Module is synthesizable </li>
+<li>{QUESTION} Does firrtl/verilog capture entire information about design i.e. no information loss? </li>
+<li>{QUESTION} : datatype of priting 1.U + 1.U in exercise  UInt&lt;1&gt;(OpResult in MyModule). This is seen as a Hardware node, and not as an addition of 1 + 1</li>
+</ul>
 
 </div>
-    
-
 </div>
+</div>
+&lt;/div&gt;
+ 
 
+</code></li></ul></li></ul></div></div></div></div>
 
 
   </div><a class="u-url" href="/sculpt/2020/07/07/chisel-cookbook.html" hidden></a>
